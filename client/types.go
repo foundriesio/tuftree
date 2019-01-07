@@ -6,6 +6,11 @@ type NotaryClient struct {
 	rootCAFile string
 }
 
+type DockerComposeUpdater struct {
+	cachedTgz string
+	dcc       DockerComposeCustom
+}
+
 type TUFCustom struct {
 	TargetFormat string `json:"targetFormat"`
 	Uri          string `json:"uri"`
@@ -21,6 +26,7 @@ type DockerComposeCustom struct {
 	TUFCustom
 
 	TgzUrl       string            `json:"tgz"`
+	TgzLeading   bool              `json:"tgzLeadingDir"`
 	ComposeFiles []string          `json:"compose-files,omitempty"`
 	ComposeEnv   map[string]string `json:"compose-env,omitempty"`
 }
