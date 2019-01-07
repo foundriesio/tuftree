@@ -35,3 +35,22 @@ type OSTreeStatus struct {
 	Active  string
 	Pending *string
 }
+
+type DeviceConfig struct {
+	HardwareId                 string
+	BaseNotaryServerUrl        string
+	BaseNotaryCAFile           string
+	BaseCollectionName         string
+	PersonalityNotaryServerUrl string
+	PersonalityNotaryCAFile    string
+	PersonalityCollectionName  string
+}
+
+type Device struct {
+	configDir         string
+	BaseNotary        *NotaryClient
+	PersonalityNotary *NotaryClient
+
+	HardwareId   string
+	OSTreeStatus *OSTreeStatus
+}
