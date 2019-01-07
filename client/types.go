@@ -24,3 +24,8 @@ type DockerComposeCustom struct {
 	ComposeFiles []string          `json:"compose-files,omitempty"`
 	ComposeEnv   map[string]string `json:"compose-env,omitempty"`
 }
+
+type OSTreeStatus struct {
+	Active  string
+	Pending *string
+}
