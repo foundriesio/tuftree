@@ -161,6 +161,51 @@ func (d *Device) UpdateBase(target *client.TargetWithRole) error {
 	return nil
 }
 
+func (d *Device) UpdatePersonality(target *client.TargetWithRole) error {
+	desired := hex.EncodeToString(target.Hashes["sha256"])
+
+	composeDir := path.Join(d.configDir, "docker-compose-current")
+	if err := os.MkdirAll(composeDir, 0700); err != nil {
+		return fmt.Errorf("Unable to create docker-compose directory: %s", err)
+	}
+
+	cacheDir := path.Join(d.configDir, "docker-compose-cache")
+	if err := os.MkdirAll(cacheDir, 0700); err != nil {
+		return fmt.Errorf("Unable to create docker-compose cache: %s", err)
+	}
+
+	custom, err := d.PersonalityNotary.DockerCompose(target.Custom)
+	if err != nil {
+		return err
+	}
+
+	logrus.Infof("Updating personality to version %s, ostree hash %s", target.Name, desired)
+	new, err := NewComposeUpdater(d.PersonalityNotary.serverURL, cacheDir, desired, *custom)
+	if err != nil {
+		return err
+	}
+
+	oldTgt, custom, err := d.PersonalityTarget()
+	if err != nil {
+		logrus.Warnf("Error loading current personality, assuming initial run: %s", err)
+	} else {
+		hash := hex.EncodeToString(oldTgt.Hashes["sha256"])
+		old, err := NewComposeUpdater(d.PersonalityNotary.serverURL, cacheDir, hash, *custom)
+		if err != nil {
+			logrus.Warnf("Unable to load old personality, skipping docker-compose-stop: %s", err)
+		} else {
+			if err := old.Stop(composeDir); err != nil {
+				logrus.Warnf("Unable to stop old personality, continuing with fingers crossed: %s", err)
+			}
+		}
+	}
+
+	if err := new.Start(composeDir); err != nil {
+		return fmt.Errorf("Unable to start new personality: %s", err)
+	}
+	return nil
+}
+
 // Takes a target name from a Base image collection like v38-hikey
 // and returns a tuple(version, hardwareId)
 func BaseVersionSplit(targetName string) (string, string) {
