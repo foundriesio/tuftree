@@ -1,0 +1,33 @@
+version: "3"
+
+services:
+  tuftree-notary:
+    image: foundriesio/notary:server-0.6.1
+    ports:
+      - "4443:4443"
+    entrypoint: /usr/bin/env sh
+    command: -c "./migrations/migrate.sh && notary-server -config=/fixtures/server-config.json"
+    volumes:
+      - ./fixtures:/fixtures
+    depends_on:
+      - mysql
+      - notary-signer
+
+  notary-signer:
+    image: foundriesio/notary:signer-0.6.1
+    entrypoint: /usr/bin/env sh
+    command: -c "./migrations/migrate.sh && notary-signer -config=/fixtures/signer-config.json"
+    volumes:
+      - ./fixtures:/fixtures
+    depends_on:
+      - mysql
+
+  mysql:
+    image: mariadb:10.1.28
+    volumes:
+      - ./mysql-initdb.d:/docker-entrypoint-initdb.d
+      - /tmp/notary_db:/var/lib/mysql
+    environment:
+      - TERM=dumb
+      - MYSQL_ALLOW_EMPTY_PASSWORD="true"
+    command: mysqld --innodb_file_per_table
