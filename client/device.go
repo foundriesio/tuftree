@@ -131,6 +131,36 @@ func (d *Device) PersonalityTarget() (*client.TargetWithRole, *DockerComposeCust
 	return &target, dcc, nil
 }
 
+func (d *Device) UpdateBase(target *client.TargetWithRole) error {
+	desired := hex.EncodeToString(target.Hashes["sha256"])
+	if d.OSTreeStatus.Active == desired {
+		logrus.Infof("Device already running ostree hash %s", desired)
+		if err := saveTarget(path.Join(d.configDir, "base.json"), target); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	ver, hwid := BaseVersionSplit(target.Name)
+	if hwid != d.HardwareId {
+		logrus.Fatalf("Unexpected hardware id for this update: %s", hwid)
+	}
+
+	custom, err := d.BaseNotary.OSTree(target.Custom)
+	if err != nil {
+		return err
+	}
+
+	logrus.Infof("Updating device to version %s, ostree hash %s", ver, desired)
+	if err := OSTreeAddRemote("tuftree", custom.Url, true); err != nil {
+		return err
+	}
+	if err := OSTreeUpdate("tuftree", desired); err != nil {
+		return err
+	}
+	return nil
+}
+
 // Takes a target name from a Base image collection like v38-hikey
 // and returns a tuple(version, hardwareId)
 func BaseVersionSplit(targetName string) (string, string) {
