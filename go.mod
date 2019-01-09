@@ -45,6 +45,7 @@ require (
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/prometheus/client_golang v0.9.2 // indirect
 	github.com/sirupsen/logrus v1.3.0
+	github.com/spf13/cobra v0.0.3
 	github.com/spf13/viper v1.3.1 // indirect
 	github.com/theupdateframework/notary v0.6.1
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
