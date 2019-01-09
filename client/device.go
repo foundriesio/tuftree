@@ -71,6 +71,7 @@ func NewDevice(configDir string) (*Device, error) {
 	d := Device{
 		HardwareId:   config.HardwareId,
 		configDir:    configDir,
+		Config:       config,
 		OSTreeStatus: status,
 	}
 
@@ -91,6 +92,14 @@ func NewDevice(configDir string) (*Device, error) {
 	}
 
 	return &d, nil
+}
+
+func (d *Device) BaseTargets() ([]*client.TargetWithRole, error) {
+	return d.BaseNotary.Targets(d.Config.BaseCollectionName)
+}
+
+func (d *Device) PersonalityTargets() ([]*client.TargetWithRole, error) {
+	return d.PersonalityNotary.Targets(d.Config.PersonalityCollectionName)
 }
 
 func (d *Device) BaseTarget() (*client.TargetWithRole, *OSTreeCustom, error) {

@@ -48,6 +48,7 @@ type DeviceConfig struct {
 
 type Device struct {
 	configDir         string
+	Config            DeviceConfig
 	BaseNotary        *NotaryClient
 	PersonalityNotary *NotaryClient
 
