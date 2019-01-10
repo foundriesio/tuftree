@@ -71,8 +71,34 @@ func (c NotaryClient) getTransport(gun data.GUN) (http.RoundTripper, error) {
 		TLSClientConfig:     tlsConfig,
 		DisableKeepAlives:   true,
 	}
+
+	modifiers := []transport.RequestModifier{
+		transport.NewHeaderRequestModifier(http.Header{
+			"User-Agent": []string{"tuftree"},
+		}),
+	}
+	authTransport := transport.NewTransport(base, modifiers...)
+	pingClient := &http.Client{
+		Transport: authTransport,
+		Timeout:   5 * time.Second,
+	}
+	req, err := http.NewRequest("GET", c.serverURL+"/v2/", nil)
+	if err != nil {
+		panic(err)
+	}
+
 	challengeManager := challenge.NewSimpleManager()
-	return transport.NewTransport(base, auth.NewAuthorizer(challengeManager, auth.NewTokenHandler(nil, nil, gun.String(), "pull"))), nil
+	resp, err := pingClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	defer resp.Body.Close()
+	if err := challengeManager.AddResponse(resp); err != nil {
+		panic(err)
+	}
+	tokenHandler := auth.NewTokenHandler(base, nil, gun.String(), "pull")
+	modifiers = append(modifiers, auth.NewAuthorizer(challengeManager, tokenHandler, auth.NewBasicHandler(nil)))
+	return transport.NewTransport(base, modifiers...), nil
 }
 
 func (c NotaryClient) OSTree(custom *json.RawMessage) (*OSTreeCustom, error) {
