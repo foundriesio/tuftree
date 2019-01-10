@@ -25,13 +25,8 @@ func DeviceInitialize(configDir string, config DeviceConfig) (*Device, error) {
 		tgt := probeTarget(config, trustDir)
 		_, config.HardwareId = BaseVersionSplit(tgt.Name)
 
-		data, err := json.Marshal(tgt)
-		if err != nil {
-			return nil, fmt.Errorf("Unable create base target: %s", err)
-		}
-		err = ioutil.WriteFile(path.Join(configDir, "base.json"), data, 0640)
-		if err != nil {
-			return nil, fmt.Errorf("Unable write base target: %s", err)
+		if err := saveTarget(path.Join(configDir, "base.json"), tgt); err != nil {
+			return nil, err
 		}
 	}
 
@@ -167,6 +162,9 @@ func (d *Device) UpdateBase(target *client.TargetWithRole) error {
 	if err := OSTreeUpdate("tuftree", desired); err != nil {
 		return err
 	}
+	if err := saveTarget(path.Join(d.configDir, "base.json"), target); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -203,14 +201,19 @@ func (d *Device) UpdatePersonality(target *client.TargetWithRole) error {
 		if err != nil {
 			logrus.Warnf("Unable to load old personality, skipping docker-compose-stop: %s", err)
 		} else {
+			logrus.Info("Stopping old set of docker-compose containers")
 			if err := old.Stop(composeDir); err != nil {
 				logrus.Warnf("Unable to stop old personality, continuing with fingers crossed: %s", err)
 			}
 		}
 	}
 
+	logrus.Info("Starting new docker-compose containers")
 	if err := new.Start(composeDir); err != nil {
 		return fmt.Errorf("Unable to start new personality: %s", err)
+	}
+	if err := saveTarget(path.Join(d.configDir, "personality.json"), target); err != nil {
+		return err
 	}
 	return nil
 }
@@ -248,5 +251,17 @@ func probeTarget(config DeviceConfig, trustDir string) *client.TargetWithRole {
 		}
 	}
 	logrus.Fatalf("Unable to find device's hash(%s) in known updates", status.Active)
+	return nil
+}
+
+func saveTarget(fileName string, target *client.TargetWithRole) error {
+	data, err := json.Marshal(target)
+	if err != nil {
+		return fmt.Errorf("Unable marshal target: %s", err)
+	}
+	err = ioutil.WriteFile(fileName, data, 0640)
+	if err != nil {
+		return fmt.Errorf("Unable write target: %s", err)
+	}
 	return nil
 }
