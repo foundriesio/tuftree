@@ -2,7 +2,7 @@ version: "3"
 
 services:
   tuftree-notary:
-    image: foundriesio/notary:server-0.6.1
+    image: foundries/notary:server-0.6.1
     ports:
       - "4443:4443"
     entrypoint: /usr/bin/env sh
@@ -14,7 +14,7 @@ services:
       - notary-signer
 
   notary-signer:
-    image: foundriesio/notary:signer-0.6.1
+    image: foundries/notary:signer-0.6.1
     entrypoint: /usr/bin/env sh
     command: -c "./migrations/migrate.sh && notary-signer -config=/fixtures/signer-config.json"
     volumes:
